@@ -54,19 +54,18 @@ router.post("/", async function (req, res) {
     const code = req.body.code;
     const name = req.body.name;
     const desc = req.body.description;
+    let results;
 
     try {
-        const results = await db.query(
+        results = await db.query(
             `INSERT INTO companies 
-        VALUES ($1, $2, $3)
-        RETURNING code, name, description`,
+            VALUES ($1, $2, $3)
+            RETURNING code, name, description`,
             [code, name, desc]
         );
     } catch (error) {
-        //console.log(error);
-        return res.json({ error: `${code} already exists.` })
+        return res.json({ error: `${code} already exists.` });
     }
-
 
     if (!results.rows[0]) {
         throw new NotFoundError("Company Not Found");
@@ -114,22 +113,16 @@ router.put("/:code", async function (req, res) {
 router.delete("/:code", async function (req, res) {
     const code = req.params.code;
 
-    const company = await db.query(
-        `SELECT name
-        FROM companies
-        WHERE code=$1`,
-        [code]
-    )
-
-    if (!company.rows[0]) {
-        throw new NotFoundError("Company Not Found - DELETE");
-    }
-
     const results = await db.query(
         `DELETE FROM companies
-        WHERE code=$1`,
+        WHERE code=$1
+        RETURNING name`,
         [code]
     )
+
+    if (!results.rows[0]) {
+        throw new NotFoundError("Company Not Found - DELETE");
+    }
 
     return res.json({ status: "deleted" })
 })
