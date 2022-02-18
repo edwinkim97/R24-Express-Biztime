@@ -23,7 +23,7 @@ router.get("/", async function (req, res) {
 })
 
 /** Get specific company by company code
- * Returns JSON {company: {code, name, description}}
+ * Returns JSON {company: {code, name, description, invoices: [id, ...]}}
  * or 404 Error
  */
 
@@ -40,7 +40,17 @@ router.get("/:code", async function (req, res) {
         throw new NotFoundError("Company Not Found");
     }
 
+    const invoiceResults = await db.query(
+        `SELECT id, comp_code, amt, paid, add_date, paid_date
+        FROM invoices AS i
+        JOIN companies AS c
+        ON i.comp_code = c.code
+        WHERE i.comp_code = $1`, [code]
+    )
+
+    const invoice = invoiceResults.rows;
     const company = results.rows[0];
+    company.invoices = invoice.map(i => i.id);
     return res.json({ company });
 })
 
